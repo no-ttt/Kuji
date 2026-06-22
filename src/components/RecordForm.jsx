@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, HelpCircle } from 'lucide-react';
 
 const PRESET_PRIZES = [
-  'A賞', 'B賞', 'C賞', 'D賞', 'E賞', 'F賞', 'G賞', 'H賞', 'I賞', 'J賞', 'K賞',
-  'LastOne賞', '炮灰'
+  '炮灰', 'A賞', 'B賞', 'C賞', 'D賞', 'E賞', 'F賞', 'G賞', 'H賞', 'I賞', 'J賞', 'K賞', 'LastOne'
 ];
 
 export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
@@ -25,7 +24,7 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
       setDate(editingRecord.date);
       setLocation(editingRecord.location);
       setCost(editingRecord.cost.toString());
-      
+
       let loadedPrizes = [];
       if (editingRecord.prizes && Array.isArray(editingRecord.prizes)) {
         const hasCount = editingRecord.prizes.some(p => 'count' in p);
@@ -45,11 +44,11 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
           }));
         }
       }
-      
+
       if (loadedPrizes.length === 0) {
         loadedPrizes = [{ name: '', value: '' }];
       }
-      
+
       setPrizes(loadedPrizes);
       setDrawCount(loadedPrizes.length);
     } else {
@@ -67,7 +66,7 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
     const countText = val.replace(/\D/g, '');
     const count = parseInt(countText) || 0;
     setDrawCount(count);
-    
+
     const activeCount = Math.max(1, count);
     setPrizes((prev) => {
       if (prev.length < activeCount) {
@@ -95,13 +94,11 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
     setPrizes((prev) => {
       const updated = [...prev];
       const prevPrize = updated[index] || { name: '', value: '' };
-      
+
       let newName = val;
       let newValue = prevPrize.value;
 
-      if (val === 'other') {
-        newName = '其他獎項';
-      } else if (val === '炮灰') {
+      if (val === '炮灰') {
         newValue = '0';
       }
 
@@ -118,7 +115,7 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!location.trim()) {
       alert('請輸入抽了什麼與在哪抽！');
       return;
@@ -162,29 +159,29 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
 
         <form onSubmit={handleSubmit} className="animate-fade">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            
+
             {/* Date Picker */}
             <div className="form-group">
               <label className="form-label">抽獎日期</label>
-              <input 
-                type="date" 
-                className="form-input" 
-                value={date} 
-                onChange={(e) => setDate(e.target.value)} 
-                required 
+              <input
+                type="date"
+                className="form-input"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
               />
             </div>
 
             {/* Location & Set */}
             <div className="form-group">
               <label className="form-label">在哪抽了什麼 (店家/套組名稱)</label>
-              <input 
-                type="text" 
-                className="form-input" 
+              <input
+                type="text"
+                className="form-input"
                 placeholder="例如: 7-11 忠孝店 - 寶可夢"
-                value={location} 
-                onChange={(e) => setLocation(e.target.value)} 
-                required 
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                required
               />
             </div>
 
@@ -192,29 +189,29 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
             <div className="form-group-row">
               <div className="form-group">
                 <label className="form-label">花費金額 (NT$)</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
+                <input
+                  type="text"
+                  className="form-input"
                   placeholder="總花費"
-                  value={cost} 
-                  onChange={(e) => setCost(e.target.value.replace(/[^0-9]/g, ''))} 
-                  required 
+                  value={cost}
+                  onChange={(e) => setCost(e.target.value.replace(/[^0-9]/g, ''))}
+                  required
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">抽數 (幾抽)</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
+                <input
+                  type="text"
+                  className="form-input"
                   placeholder="抽數"
-                  value={drawCount || ''} 
+                  value={drawCount || ''}
                   onChange={(e) => handleDrawCountChange(e.target.value)}
                   onBlur={() => {
                     if (!drawCount || drawCount < 1) {
                       handleDrawCountChange('1');
                     }
                   }}
-                  required 
+                  required
                 />
               </div>
             </div>
@@ -224,7 +221,7 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                 <label className="form-label">抽中獎項明細</label>
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                  <HelpCircle size={12} /> 炮灰將自動填入 0 元價值
+                  {/* <HelpCircle size={12} /> 炮灰將自動填入 0 元價值 */}
                 </span>
               </div>
 
@@ -232,7 +229,7 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
                 {Array(Math.max(1, drawCount)).fill(null).map((_, idx) => {
                   const prize = prizes[idx] || { name: '', value: '' };
                   const isPreset = PRESET_PRIZES.includes(prize.name) || prize.name === '';
-                  const selectValue = prize.name === '' ? '' : (isPreset ? prize.name : 'other');
+                  const selectValue = prize.name;
 
                   return (
                     <div className="draw-row" key={idx}>
@@ -243,9 +240,9 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
                             className="form-input"
                             value={selectValue}
                             onChange={(e) => handleSelectChange(idx, e.target.value)}
-                            style={{ 
-                              backgroundColor: 'var(--bg-primary)', 
-                              border: '2px solid var(--border-color)', 
+                            style={{
+                              backgroundColor: 'var(--bg-primary)',
+                              border: '2px solid var(--border-color)',
                               color: 'var(--text-primary)',
                               cursor: 'pointer'
                             }}
@@ -254,24 +251,23 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
                             {PRESET_PRIZES.map(p => (
                               <option key={p} value={p}>{p}</option>
                             ))}
-                            <option value="other">其他 (手動輸入)</option>
                           </select>
-                          
-                          <input 
-                            type="text" 
-                            className="form-input val-input" 
-                            placeholder="價值 NT$" 
-                            value={prize.value} 
+
+                          <input
+                            type="text"
+                            className="form-input val-input"
+                            placeholder="價值 NT$"
+                            value={prize.value}
                             onChange={(e) => updatePrize(idx, 'value', e.target.value.replace(/[^0-9]/g, ''))}
                           />
                         </div>
-                        
+
                         {!isPreset && (
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            placeholder="請輸入自訂獎項名稱..." 
-                            value={prize.name} 
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="請輸入自訂獎項名稱..."
+                            value={prize.name}
                             onChange={(e) => updatePrize(idx, 'name', e.target.value)}
                             style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                           />
@@ -296,7 +292,7 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
                 儲存戰績
               </button>
             </div>
-            
+
           </div>
         </form>
       </div>

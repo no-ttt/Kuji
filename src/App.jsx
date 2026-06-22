@@ -12,14 +12,14 @@ export default function App() {
   // If Google Sheets URL is missing, render configuration guide
   if (!GOOGLE_SHEETS_URL) {
     return (
-      <div style={{ 
-        padding: '80px 20px 40px 20px', 
-        textAlign: 'center', 
-        color: 'var(--text-primary)', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
+      <div style={{
+        padding: '80px 20px 40px 20px',
+        textAlign: 'center',
+        color: 'var(--text-primary)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
         minHeight: '100vh',
         backgroundColor: 'var(--bg-primary)',
         fontFamily: 'var(--font-sans)'
@@ -137,29 +137,29 @@ export default function App() {
   const filteredRecords = records.filter((r) => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return true;
-    
+
     const matchLocation = r.location.toLowerCase().includes(query);
     const matchPrizes = r.prizes && r.prizes.some((p) => p.name.toLowerCase().includes(query));
-    
+
     return matchLocation || matchPrizes;
   });
 
   return (
     <>
       <Header />
-      
+
       <Banner records={records} />
 
       {/* Tabs */}
       <div className="tabs-container">
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'list' ? 'active' : ''}`}
           onClick={() => setActiveTab('list')}
         >
           <List size={16} />
           戰績清單
         </button>
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'stats' ? 'active' : ''}`}
           onClick={() => setActiveTab('stats')}
         >
@@ -175,9 +175,9 @@ export default function App() {
           <div className="filter-container">
             <div className="search-input-wrapper">
               <Search className="search-icon" size={16} />
-              <input 
-                type="text" 
-                className="search-input" 
+              <input
+                type="text"
+                className="search-input"
                 placeholder="搜尋抽了什麼、在哪抽..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -190,17 +190,17 @@ export default function App() {
             {isLoading && (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '20px', color: 'var(--text-muted)' }}>
                 <RefreshCw size={16} className="animate-flash" style={{ animationDuration: '1s' }} />
-                <span>試算表同步中...</span>
+                <span>資料同步中...</span>
               </div>
             )}
-            
+
             {!isLoading && filteredRecords.length > 0 ? (
               filteredRecords.map((record) => (
-                <RecordCard 
-                  key={record.id} 
-                  record={record} 
-                  onEdit={openEditForm} 
-                  onDelete={handleDeleteRecord} 
+                <RecordCard
+                  key={record.id}
+                  record={record}
+                  onEdit={openEditForm}
+                  onDelete={handleDeleteRecord}
                 />
               ))
             ) : (
@@ -214,9 +214,9 @@ export default function App() {
           </div>
 
           {/* Floating Action Button for mobile add */}
-          <button 
-            className="fab-btn" 
-            onClick={openAddForm} 
+          <button
+            className="fab-btn"
+            onClick={openAddForm}
             title="新增戰績"
             aria-label="Add record"
           >
@@ -228,11 +228,11 @@ export default function App() {
       )}
 
       {/* Form Bottom Sheet Modal */}
-      <RecordForm 
-        isOpen={isFormOpen} 
-        onClose={() => setIsFormOpen(false)} 
-        onSave={handleSaveRecord} 
-        editingRecord={editingRecord} 
+      <RecordForm
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSave={handleSaveRecord}
+        editingRecord={editingRecord}
       />
     </>
   );
