@@ -8,6 +8,35 @@ import { Plus, List, BarChart2, Search, RefreshCw } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 export default function App() {
+  // If Supabase failed to initialize, render warning screen immediately
+  if (!supabase) {
+    return (
+      <div style={{ 
+        padding: '80px 20px 40px 20px', 
+        textAlign: 'center', 
+        color: 'var(--text-primary)', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '100vh',
+        backgroundColor: 'var(--bg-primary)'
+      }}>
+        <h3 style={{ color: 'var(--color-danger)', marginBottom: '16px', fontSize: '1.3rem' }}>設定錯誤 ⚠️</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: '1.8', maxWidth: '340px' }}>
+          偵測到 <code>.env</code> 設定未生效或檔案不存在。<br /><br />
+          請確認您的專案目錄下已建立 <code>.env</code> 檔案並填入以下變數：<br /><br />
+          <span style={{ display: 'block', textAlign: 'left', backgroundColor: '#F1EFE9', padding: '12px', border: '1px solid var(--border-color)', borderRadius: '8px', fontFamily: 'monospace' }}>
+            VITE_SUPABASE_URL=您的網址<br />
+            VITE_SUPABASE_ANON_KEY=您的Anon公鑰
+          </span>
+          <br />
+          設定後請重新執行 <code>npm run deploy</code> 進行部署。
+        </p>
+      </div>
+    );
+  }
+
   const [records, setRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('list'); // 'list' | 'stats'
