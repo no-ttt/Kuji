@@ -13,8 +13,32 @@ export default function StatsView({ records }) {
 
   // General Metrics
   const totalSessions = records.length;
-  const profitableSessions = records.filter(r => r.value > r.cost).length;
-  const winRate = ((profitableSessions / totalSessions) * 100).toFixed(0);
+  
+  // Calculate total draws and won draws (where the prize name is not "炮灰")
+  let totalDraws = 0;
+  let wonDraws = 0;
+  
+  records.forEach(r => {
+    if (r.prizes && Array.isArray(r.prizes) && r.prizes.length > 0) {
+      r.prizes.forEach(p => {
+        totalDraws += 1;
+        const name = p.name ? p.name.trim() : '炮灰';
+        if (name !== '炮灰') {
+          wonDraws += 1;
+        }
+      });
+    } else {
+      // Fallback for older records with no detailed prizes list: count as win if value > 0
+      totalDraws += 1;
+      const sessionValue = Number(r.value) || 0;
+      if (sessionValue > 0) {
+        wonDraws += 1;
+      }
+    }
+  });
+
+  const winRate = totalDraws > 0 ? ((wonDraws / totalDraws) * 100).toFixed(0) : '0';
+
 
   const totalSpent = records.reduce((sum, r) => sum + r.cost, 0);
   const avgSpent = (totalSpent / totalSessions).toFixed(0);
