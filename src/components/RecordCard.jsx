@@ -1,0 +1,112 @@
+import React from 'react';
+import { Calendar, Edit, Trash2, MapPin } from 'lucide-react';
+
+export default function RecordCard({ record, onEdit, onDelete }) {
+  const { id, date, location, cost, value, prizes } = record;
+  const net = value - cost;
+
+  // Group prizes by name for cleaner card display
+  const getGroupedPrizes = () => {
+    if (!prizes || !Array.isArray(prizes)) return [];
+    const groups = {};
+    prizes.forEach((p) => {
+      const name = p.name || '炮灰';
+      const count = p.count || 1;
+      groups[name] = (groups[name] || 0) + count;
+    });
+    return Object.entries(groups).map(([name, count]) => ({ name, count }));
+  };
+
+  const groupedPrizes = getGroupedPrizes();
+
+  // Decide badge styling based on prize name
+  const isHighPrize = (name) => {
+    const upperName = name.toUpperCase();
+    return (
+      upperName.startsWith('A賞') ||
+      upperName.includes('LAST') ||
+      upperName.includes('SP賞') ||
+      upperName.includes('最後') ||
+      upperName.startsWith('B賞')
+    );
+  };
+
+  const formatCurrency = (val) => {
+    return `NT$ ${Math.abs(val).toLocaleString()}`;
+  };
+
+  const handleEdit = (e) => {
+    e.stopPropagation();
+    onEdit(record);
+  };
+
+  const handleDelete = (e) => {
+    e.stopPropagation();
+    if (window.confirm('確定要刪除這筆戰績嗎？')) {
+      onDelete(id);
+    }
+  };
+
+  return (
+    <div className="record-card animate-fade">
+      <div className="record-card-header">
+        <div>
+          <h3 className="record-card-title">{location || '未命名的一番賞'}</h3>
+          <span className="record-card-date">
+            <Calendar size={12} />
+            {date}
+          </span>
+        </div>
+        
+        <div className="record-card-actions">
+          <button className="text-btn edit" onClick={handleEdit} title="編輯">
+            <Edit size={14} />
+            <span>編輯</span>
+          </button>
+          <button className="text-btn delete" onClick={handleDelete} title="刪除">
+            <Trash2 size={14} />
+            <span>刪除</span>
+          </button>
+        </div>
+      </div>
+
+      {groupedPrizes.length > 0 ? (
+        <div className="record-prizes-container">
+          {groupedPrizes.map((prize, idx) => (
+            <span 
+              key={idx} 
+              className={`record-prize-tag ${isHighPrize(prize.name) ? 'A' : 'normal'}`}
+            >
+              {prize.name} {prize.count > 1 ? `x${prize.count}` : ''}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div className="record-prizes-container">
+          <span className="record-prize-tag normal">無記錄獎項</span>
+        </div>
+      )}
+
+      <div className="record-card-footer">
+        <div className="record-card-stats">
+          <div className="card-stat-group">
+            <span className="card-stat-label">花費</span>
+            <span className="card-stat-val" style={{ color: 'var(--text-primary)' }}>
+              {formatCurrency(cost)}
+            </span>
+          </div>
+          <div className="card-stat-group">
+            <span className="card-stat-label">價值</span>
+            <span className="card-stat-val" style={{ color: 'var(--text-primary)' }}>
+              {formatCurrency(value)}
+            </span>
+          </div>
+        </div>
+
+        <span className={`record-net-badge ${net >= 0 ? 'win' : 'loss'}`}>
+          {net >= 0 ? '贏' : '虧'} {formatCurrency(net)}
+        </span>
+      </div>
+    </div>
+  );
+}
