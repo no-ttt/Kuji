@@ -5,11 +5,12 @@ import RecordCard from './components/RecordCard';
 import RecordForm from './components/RecordForm';
 import StatsView from './components/StatsView';
 import { Plus, List, BarChart2, Search, RefreshCw } from 'lucide-react';
-import { supabase } from './supabaseClient';
+
+const GOOGLE_SHEETS_URL = import.meta.env.VITE_GOOGLE_SHEETS_URL;
 
 export default function App() {
-  // If Supabase failed to initialize, render warning screen immediately
-  if (!supabase) {
+  // If Google Sheets URL is missing, render configuration guide
+  if (!GOOGLE_SHEETS_URL) {
     return (
       <div style={{ 
         padding: '80px 20px 40px 20px', 
@@ -20,15 +21,15 @@ export default function App() {
         alignItems: 'center', 
         justifyContent: 'center', 
         minHeight: '100vh',
-        backgroundColor: 'var(--bg-primary)'
+        backgroundColor: 'var(--bg-primary)',
+        fontFamily: 'var(--font-sans)'
       }}>
-        <h3 style={{ color: 'var(--color-danger)', marginBottom: '16px', fontSize: '1.3rem' }}>設定錯誤 ⚠️</h3>
+        <h3 style={{ color: 'var(--color-danger)', marginBottom: '16px', fontSize: '1.3rem' }}>設定未完成 ⚠️</h3>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: '1.8', maxWidth: '340px' }}>
-          偵測到 <code>.env</code> 設定未生效或檔案不存在。<br /><br />
-          請確認您的專案目錄下已建立 <code>.env</code> 檔案並填入以下變數：<br /><br />
-          <span style={{ display: 'block', textAlign: 'left', backgroundColor: '#F1EFE9', padding: '12px', border: '1px solid var(--border-color)', borderRadius: '8px', fontFamily: 'monospace' }}>
-            VITE_SUPABASE_URL=您的網址<br />
-            VITE_SUPABASE_ANON_KEY=您的Anon公鑰
+          偵測到 <code>.env</code> 檔案中未設定 <code>VITE_GOOGLE_SHEETS_URL</code> 變數。<br /><br />
+          請確認您的專案目錄下已建立 <code>.env</code> 檔案並填入您的 Google Apps Script 網址：<br /><br />
+          <span style={{ display: 'block', textAlign: 'left', backgroundColor: '#F1EFE9', padding: '12px', border: '1px solid var(--border-color)', borderRadius: '8px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+            VITE_GOOGLE_SHEETS_URL=您的 Apps Script 部署網址
           </span>
           <br />
           設定後請重新執行 <code>npm run deploy</code> 進行部署。
@@ -44,24 +45,19 @@ export default function App() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
 
-  // Fetch records from Supabase on mount
+  // Fetch records from Google Sheets on mount
   useEffect(() => {
     const loadRecords = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('kuji_records')
-          .select('*')
-          .order('date', { ascending: false });
-
-        if (error) throw error;
-
-        if (data) {
+        const response = await fetch(GOOGLE_SHEETS_URL);
+        const data = await response.json();
+        if (Array.isArray(data)) {
           setRecords(data);
         }
       } catch (err) {
-        console.error('Failed fetching from Supabase:', err);
-        alert('讀取雲端資料失敗：' + err.message);
+        console.error('Failed fetching from Google Sheets:', err);
+        alert('讀取 Google 試算表失敗：' + err.message);
       } finally {
         setIsLoading(false);
       }
@@ -73,24 +69,31 @@ export default function App() {
   const handleSaveRecord = async (recordData) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('kuji_records')
-        .upsert(recordData);
-
-      if (error) throw error;
-
-      setRecords((prev) => {
-        const index = prev.findIndex((r) => r.id === recordData.id);
-        if (index > -1) {
-          const updated = [...prev];
-          updated[index] = recordData;
-          return updated;
-        } else {
-          return [recordData, ...prev];
-        }
+      const response = await fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'text/plain' // simple request to bypass CORS preflight
+        },
+        body: JSON.stringify({ action: 'save', record: recordData })
       });
+      const result = await response.json();
+      if (result.success) {
+        setRecords((prev) => {
+          const index = prev.findIndex((r) => r.id === recordData.id);
+          if (index > -1) {
+            const updated = [...prev];
+            updated[index] = recordData;
+            return updated;
+          } else {
+            return [recordData, ...prev];
+          }
+        });
+      } else {
+        throw new Error(result.error || '伺服器寫入失敗');
+      }
     } catch (err) {
-      alert('雲端儲存失敗：' + err.message);
+      alert('儲存至 Google 試算表失敗：' + err.message);
     } finally {
       setIsLoading(false);
     }
@@ -99,15 +102,22 @@ export default function App() {
   const handleDeleteRecord = async (id) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('kuji_records')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      setRecords((prev) => prev.filter((r) => r.id !== id));
+      const response = await fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'text/plain'
+        },
+        body: JSON.stringify({ action: 'delete', id: id })
+      });
+      const result = await response.json();
+      if (result.success) {
+        setRecords((prev) => prev.filter((r) => r.id !== id));
+      } else {
+        throw new Error(result.error || '伺服器刪除失敗');
+      }
     } catch (err) {
-      alert('雲端刪除失敗：' + err.message);
+      alert('刪除資料失敗：' + err.message);
     } finally {
       setIsLoading(false);
     }
@@ -180,7 +190,7 @@ export default function App() {
             {isLoading && (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '20px', color: 'var(--text-muted)' }}>
                 <RefreshCw size={16} className="animate-flash" style={{ animationDuration: '1s' }} />
-                <span>資料同步中...</span>
+                <span>試算表同步中...</span>
               </div>
             )}
             
