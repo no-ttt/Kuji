@@ -96,42 +96,6 @@ export default async function handler(req, res) {
 
       const { action } = body;
 
-      if (action === 'import_defaults') {
-        const recordsToImport = [
-          {
-            id: '1783230165652',
-            date: '2026-07-05',
-            location: '逢甲商圈《我的英雄學院》－交織的思念',
-            cost: 1100,
-            value: 1250,
-            prizes: [{"name":"E賞","value":900},{"name":"G賞","value":350},{"name":"炮灰","value":0}]
-          },
-          {
-            id: '1783230771924',
-            date: '2026-07-05',
-            location: '北車地下街 13Y出口《正義使者》我的英雄學院之非法英雄',
-            cost: 2240,
-            value: 5000,
-            prizes: [{"name":"B賞","value":1000},{"name":"LastOne","value":4000},{"name":"炮灰","value":0},{"name":"炮灰","value":0},{"name":"炮灰","value":0},{"name":"炮灰","value":0},{"name":"炮灰","value":0}]
-          }
-        ];
-
-        for (const record of recordsToImport) {
-          const prizesJson = JSON.stringify(record.prizes);
-          await sql`
-            INSERT INTO kuji_records (id, date, location, cost, value, prizes)
-            VALUES (${record.id}, ${record.date}, ${record.location}, ${record.cost}, ${record.value}, ${prizesJson})
-            ON CONFLICT (id) DO UPDATE SET
-              date = EXCLUDED.date,
-              location = EXCLUDED.location,
-              cost = EXCLUDED.cost,
-              value = EXCLUDED.value,
-              prizes = EXCLUDED.prizes;
-          `;
-        }
-        return res.status(200).json({ success: true, message: 'Imported successfully' });
-      }
-
       if (action === 'save') {
         const { record } = body;
         if (!record || !record.id) {

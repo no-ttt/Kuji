@@ -883,3 +883,32 @@ body {
 .monthly-bar-col:hover .monthly-bar-tooltip {
   display: block;
 }
+
+/* Responsive adjustments for mobile screens */
+@media (max-width: 480px) {
+  .record-card-actions {
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .record-card-actions .text-btn span {
+    display: none;
+  }
+  .record-card-actions .text-btn {
+    padding: 8px;
+    border-radius: 50%;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+  }
+  .record-card-actions .text-btn.edit {
+    color: var(--color-accent);
+  }
+  .record-card-actions .text-btn.delete {
+    color: var(--color-danger);
+  }
+  .record-card-actions .text-btn.edit:hover {
+    background-color: #FAF8F5;
+  }
+  .record-card-actions .text-btn.delete:hover {
+    background-color: var(--color-danger-bg);
+  }
+}
