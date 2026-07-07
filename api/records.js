@@ -1,5 +1,6 @@
 /* global process */
-import { Redis } from '@upstash/redis';
+import { Redis as UpstashRedis } from '@upstash/redis';
+import Redis from 'ioredis';
 
 export default async function handler(req, res) {
   // Set CORS headers for local development and cross-origin access
@@ -15,10 +16,50 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  // Detect available database environment variables
+  const restUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const restToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  const tcpUrl = process.env.REDIS_URL;
 
-  if (!url || !token) {
+  let db = null;
+
+  if (restUrl && restToken) {
+    // Mode A: REST Client (Vercel KV / Upstash REST API)
+    db = {
+      get: async (key) => {
+        const client = new UpstashRedis({ url: restUrl, token: restToken });
+        return await client.get(key);
+      },
+      set: async (key, val) => {
+        const client = new UpstashRedis({ url: restUrl, token: restToken });
+        await client.set(key, val);
+      }
+    };
+  } else if (tcpUrl) {
+    // Mode B: TCP Client (Standard Redis via REDIS_URL)
+    db = {
+      get: async (key) => {
+        const client = new Redis(tcpUrl);
+        try {
+          const val = await client.get(key);
+          return val ? JSON.parse(val) : null;
+        } finally {
+          await client.quit();
+        }
+      },
+      set: async (key, val) => {
+        const client = new Redis(tcpUrl);
+        try {
+          await client.set(key, JSON.stringify(val));
+        } finally {
+          await client.quit();
+        }
+      }
+    };
+  }
+
+  // If no connection parameters are present, throw a clear connection warning
+  if (!db) {
     const envKeys = Object.keys(process.env).filter(key => 
       key.includes('KV') || key.includes('REDIS') || key.includes('UPSTASH') || key.includes('URL') || key.includes('TOKEN')
     );
@@ -29,13 +70,12 @@ export default async function handler(req, res) {
     });
   }
 
-  const redis = new Redis({ url, token });
   const { method } = req;
 
   try {
     // 1. GET Request - Retrieve all records
     if (method === 'GET') {
-      const records = await redis.get('kuji_records');
+      const records = await db.get('kuji_records');
       return res.status(200).json(records || []);
     }
 
@@ -51,7 +91,7 @@ export default async function handler(req, res) {
       }
 
       const { action } = body;
-      let records = (await redis.get('kuji_records')) || [];
+      let records = (await db.get('kuji_records')) || [];
 
       if (action === 'save') {
         const { record } = body;
@@ -66,7 +106,7 @@ export default async function handler(req, res) {
           records.unshift(record); // Add to the top of the list
         }
 
-        await redis.set('kuji_records', records);
+        await db.set('kuji_records', records);
         return res.status(200).json({ success: true });
       }
 
@@ -77,7 +117,7 @@ export default async function handler(req, res) {
         }
 
         records = records.filter((r) => String(r.id) !== String(id));
-        await redis.set('kuji_records', records);
+        await db.set('kuji_records', records);
         return res.status(200).json({ success: true });
       }
 
