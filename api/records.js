@@ -1,6 +1,23 @@
 /* global process */
-import { Redis as UpstashRedis } from '@upstash/redis';
-import Redis from 'ioredis';
+import { neon } from '@neondatabase/serverless';
+
+let tableInitialized = false;
+
+// DDL check helper to bootstrap the PostgreSQL table if it does not exist
+async function ensureTable(sql) {
+  if (tableInitialized) return;
+  await sql(`
+    CREATE TABLE IF NOT EXISTS kuji_records (
+      id VARCHAR(255) PRIMARY KEY,
+      date VARCHAR(255),
+      location VARCHAR(255),
+      cost INTEGER,
+      value INTEGER,
+      prizes JSONB
+    );
+  `);
+  tableInitialized = true;
+}
 
 export default async function handler(req, res) {
   // Set CORS headers for local development and cross-origin access
@@ -16,67 +33,51 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Detect available database environment variables
-  const restUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const restToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-  const tcpUrl = process.env.REDIS_URL;
+  // Detect database URL (injected automatically when Postgres/Neon is connected in Vercel Storage)
+  const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-  let db = null;
-
-  if (restUrl && restToken) {
-    // Mode A: REST Client (Vercel KV / Upstash REST API)
-    db = {
-      get: async (key) => {
-        const client = new UpstashRedis({ url: restUrl, token: restToken });
-        return await client.get(key);
-      },
-      set: async (key, val) => {
-        const client = new UpstashRedis({ url: restUrl, token: restToken });
-        await client.set(key, val);
-      }
-    };
-  } else if (tcpUrl) {
-    // Mode B: TCP Client (Standard Redis via REDIS_URL)
-    db = {
-      get: async (key) => {
-        const client = new Redis(tcpUrl);
-        try {
-          const val = await client.get(key);
-          return val ? JSON.parse(val) : null;
-        } finally {
-          await client.quit();
-        }
-      },
-      set: async (key, val) => {
-        const client = new Redis(tcpUrl);
-        try {
-          await client.set(key, JSON.stringify(val));
-        } finally {
-          await client.quit();
-        }
-      }
-    };
-  }
-
-  // If no connection parameters are present, throw a clear connection warning
-  if (!db) {
+  if (!dbUrl) {
     const envKeys = Object.keys(process.env).filter(key => 
-      key.includes('KV') || key.includes('REDIS') || key.includes('UPSTASH') || key.includes('URL') || key.includes('TOKEN')
+      key.includes('POSTGRES') || key.includes('DATABASE') || key.includes('URL') || key.includes('TOKEN')
     );
     return res.status(500).json({
       success: false,
-      error: '資料庫連線設定未完成。請確認您已在 Vercel 專案後台連結 KV 或 Upstash Redis 資料庫，並已進行 Redeploy 重新部署。',
+      error: '資料庫連線設定未完成。請確認您已在 Vercel 專案後台連結 Postgres (Neon) 資料庫，並已進行 Redeploy 重新部署。',
       debugEnvKeys: envKeys
     });
   }
 
+  const sql = neon(dbUrl);
   const { method } = req;
 
   try {
+    // Ensure database table exists before handling queries
+    await ensureTable(sql);
+
     // 1. GET Request - Retrieve all records
     if (method === 'GET') {
-      const records = await db.get('kuji_records');
-      return res.status(200).json(records || []);
+      const rows = await sql('SELECT * FROM kuji_records ORDER BY date DESC, id DESC');
+      
+      const records = rows.map((r) => {
+        let prizes = r.prizes;
+        if (typeof prizes === 'string') {
+          try {
+            prizes = JSON.parse(prizes);
+          } catch {
+            prizes = [];
+          }
+        }
+        return {
+          id: String(r.id),
+          date: r.date || '',
+          location: r.location || '',
+          cost: Number(r.cost) || 0,
+          value: Number(r.value) || 0,
+          prizes: prizes || []
+        };
+      });
+
+      return res.status(200).json(records);
     }
 
     // 2. POST Request - Save or Delete
@@ -91,7 +92,6 @@ export default async function handler(req, res) {
       }
 
       const { action } = body;
-      let records = (await db.get('kuji_records')) || [];
 
       if (action === 'save') {
         const { record } = body;
@@ -99,25 +99,38 @@ export default async function handler(req, res) {
           return res.status(400).json({ success: false, error: 'Missing record or record ID' });
         }
 
-        const index = records.findIndex((r) => String(r.id) === String(record.id));
-        if (index > -1) {
-          records[index] = record;
-        } else {
-          records.unshift(record); // Add to the top of the list
-        }
+        const prizesJson = JSON.stringify(record.prizes || []);
 
-        await db.set('kuji_records', records);
+        // Perform an UPSERT (insert or update on primary key conflict)
+        await sql(`
+          INSERT INTO kuji_records (id, date, location, cost, value, prizes)
+          VALUES ($1, $2, $3, $4, $5, $6)
+          ON CONFLICT (id)
+          DO UPDATE SET 
+            date = EXCLUDED.date, 
+            location = EXCLUDED.location, 
+            cost = EXCLUDED.cost, 
+            value = EXCLUDED.value, 
+            prizes = EXCLUDED.prizes
+        `, [
+          String(record.id),
+          String(record.date || ''),
+          String(record.location || ''),
+          Number(record.cost) || 0,
+          Number(record.value) || 0,
+          prizesJson
+        ]);
+
         return res.status(200).json({ success: true });
       }
 
       if (action === 'delete') {
         const { id } = body;
         if (!id) {
-          return res.status(400).json({ success: false, error: 'Missing record ID for deletion' });
+          return res.status(400).json({ success: false, error: 'Missing ID for deletion' });
         }
 
-        records = records.filter((r) => String(r.id) !== String(id));
-        await db.set('kuji_records', records);
+        await sql('DELETE FROM kuji_records WHERE id = $1', [String(id)]);
         return res.status(200).json({ success: true });
       }
 
@@ -126,7 +139,7 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   } catch (error) {
-    console.error('Vercel KV Serverless API Error:', error);
+    console.error('Vercel Postgres (Neon) API Error:', error);
     return res.status(500).json({ success: false, error: error.message || 'Internal Server Error' });
   }
 }
