@@ -5,6 +5,24 @@ export default function RecordCard({ record, onEdit, onDelete }) {
   const { id, date, location, cost, value, prizes } = record;
   const net = value - cost;
 
+  // Split location into shop and series
+  const getLocParts = () => {
+    const loc = location || '';
+    const splitIdx = loc.indexOf('《');
+    if (splitIdx > -1) {
+      return {
+        shop: loc.substring(0, splitIdx).trim(),
+        series: loc.substring(splitIdx).trim()
+      };
+    }
+    return {
+      shop: loc.trim() || '未命名店家',
+      series: ''
+    };
+  };
+
+  const { shop, series } = getLocParts();
+
   // Group prizes by name for cleaner card display
   const getGroupedPrizes = () => {
     if (!prizes || !Array.isArray(prizes)) return [];
@@ -23,6 +41,7 @@ export default function RecordCard({ record, onEdit, onDelete }) {
   const isHighPrize = (name) => {
     const upperName = name.toUpperCase();
     return (
+      upperName.startsWith('S賞') ||
       upperName.startsWith('A賞') ||
       upperName.includes('LAST') ||
       upperName.includes('SP賞') ||
@@ -51,11 +70,16 @@ export default function RecordCard({ record, onEdit, onDelete }) {
     <div className="record-card animate-fade">
       <div className="record-card-header">
         <div>
-          <h3 className="record-card-title">{location || '未命名的一番賞'}</h3>
-          <span className="record-card-date">
+          <div className="record-card-shop" style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '3px' }}>
+            {shop}
+          </div>
+          <span className="record-card-date" style={{ display: 'inline-flex', marginBottom: '6px' }}>
             <Calendar size={12} />
             {date}
           </span>
+          <h3 className="record-card-title" style={{ marginTop: '2px' }}>
+            {series || '未命名套組'}
+          </h3>
         </div>
         
         <div className="record-card-actions">

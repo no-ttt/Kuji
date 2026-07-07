@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, HelpCircle } from 'lucide-react';
 
 const PRESET_PRIZES = [
-  '炮灰', 'A賞', 'B賞', 'C賞', 'D賞', 'E賞', 'F賞', 'G賞', 'H賞', 'I賞', 'J賞', 'K賞', 'LastOne'
+  '炮灰', 'S賞', 'A賞', 'B賞', 'C賞', 'D賞', 'E賞', 'F賞', 'G賞', 'H賞', 'I賞', 'J賞', 'K賞', 'LastOne'
 ];
 
-export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
+export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isLoading }) {
   const getLocalDateString = () => {
     const local = new Date();
     local.setMinutes(local.getMinutes() - local.getTimezoneOffset());
@@ -13,7 +13,8 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
   };
 
   const [date, setDate] = useState(getLocalDateString());
-  const [location, setLocation] = useState('');
+  const [shop, setShop] = useState('');
+  const [series, setSeries] = useState('');
   const [cost, setCost] = useState('');
   const [drawCount, setDrawCount] = useState(1);
   const [prizes, setPrizes] = useState([{ name: '', value: '' }]);
@@ -21,8 +22,19 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
   // Sync state with editingRecord
   useEffect(() => {
     if (editingRecord) {
-      setDate(editingRecord.date);
-      setLocation(editingRecord.location);
+      setDate(editingRecord.date ? editingRecord.date.split('T')[0] : getLocalDateString());
+      
+      // Split location into shop and series
+      const loc = editingRecord.location || '';
+      const splitIdx = loc.indexOf('《');
+      if (splitIdx > -1) {
+        setShop(loc.substring(0, splitIdx).trim());
+        setSeries(loc.substring(splitIdx).trim());
+      } else {
+        setShop(loc.trim());
+        setSeries('');
+      }
+
       setCost(editingRecord.cost.toString());
 
       let loadedPrizes = [];
@@ -53,7 +65,8 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
       setDrawCount(loadedPrizes.length);
     } else {
       setDate(getLocalDateString());
-      setLocation('');
+      setShop('');
+      setSeries('');
       setCost('');
       setDrawCount(1);
       setPrizes([{ name: '', value: '' }]);
@@ -116,8 +129,12 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!location.trim()) {
-      alert('請輸入抽了什麼與在哪抽！');
+    if (!shop.trim()) {
+      alert('請輸入店家名稱！');
+      return;
+    }
+    if (!series.trim()) {
+      alert('請輸入套組名稱！');
       return;
     }
     if (cost === '' || isNaN(cost) || Number(cost) < 0) {
@@ -127,17 +144,22 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
 
     const finalDrawCount = Math.max(1, drawCount);
     // Sanitize prizes - default empty names to '炮灰' and values to 0
-    const sanitizedPrizes = prizes.slice(0, finalDrawCount).map((p, idx) => ({
+    const sanitizedPrizes = prizes.slice(0, finalDrawCount).map((p) => ({
       name: p.name.trim() || '炮灰',
       value: Number(p.value) || 0
     }));
 
     const totalValue = sanitizedPrizes.reduce((sum, p) => sum + p.value, 0);
 
+    let cleanSeries = series.trim();
+    if (cleanSeries && !cleanSeries.includes('《')) {
+      cleanSeries = `《${cleanSeries}》`;
+    }
+
     const recordData = {
       id: editingRecord ? editingRecord.id : Date.now().toString(),
       date,
-      location: location.trim(),
+      location: `${shop.trim()}${cleanSeries}`,
       cost: Number(cost),
       value: totalValue,
       prizes: sanitizedPrizes
@@ -172,15 +194,26 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
               />
             </div>
 
-            {/* Location & Set */}
+            {/* Shop & Series (Two Fields - Stacked) */}
             <div className="form-group">
-              <label className="form-label">在哪抽了什麼 (店家/套組名稱)</label>
+              <label className="form-label">店家名稱</label>
               <input
                 type="text"
                 className="form-input"
-                placeholder="例如: 7-11 忠孝店 - 寶可夢"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                placeholder="例如: 7-11 忠孝店"
+                value={shop}
+                onChange={(e) => setShop(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">套組名稱</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="例如: 寶可夢"
+                value={series}
+                onChange={(e) => setSeries(e.target.value)}
                 required
               />
             </div>
@@ -287,9 +320,9 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord }) {
 
             {/* Submit Button */}
             <div className="form-actions" style={{ marginTop: '8px' }}>
-              <button type="submit" className="btn btn-primary">
+              <button type="submit" className="btn btn-primary" disabled={isLoading}>
                 <Save size={18} />
-                儲存戰績
+                {isLoading ? '儲存中...' : '儲存戰績'}
               </button>
             </div>
 

@@ -113,6 +113,7 @@ export default function StatsView({ records }) {
   const isHighPrize = (name) => {
     const upperName = name.toUpperCase();
     return (
+      upperName.startsWith('S賞') ||
       upperName.startsWith('A賞') ||
       upperName.includes('LAST') ||
       upperName.includes('SP賞') ||

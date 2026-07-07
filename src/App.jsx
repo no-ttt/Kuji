@@ -233,6 +233,7 @@ export default function App() {
         onClose={() => setIsFormOpen(false)}
         onSave={handleSaveRecord}
         editingRecord={editingRecord}
+        isLoading={isLoading}
       />
     </>
   );
