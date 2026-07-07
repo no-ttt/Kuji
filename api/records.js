@@ -1,12 +1,6 @@
 /* global process */
 import { Redis } from '@upstash/redis';
 
-// Initialize Redis client using standard Vercel KV or Upstash Redis environment variables
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '',
-});
-
 export default async function handler(req, res) {
   // Set CORS headers for local development and cross-origin access
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -21,6 +15,17 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!url || !token) {
+    return res.status(500).json({
+      success: false,
+      error: '資料庫連線設定未完成。請確認您已在 Vercel 專案後台連結 KV 或 Upstash Redis 資料庫，並已進行 Redeploy 重新部署。'
+    });
+  }
+
+  const redis = new Redis({ url, token });
   const { method } = req;
 
   try {
