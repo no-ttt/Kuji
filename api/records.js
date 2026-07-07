@@ -19,9 +19,13 @@ export default async function handler(req, res) {
   const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (!url || !token) {
+    const envKeys = Object.keys(process.env).filter(key => 
+      key.includes('KV') || key.includes('REDIS') || key.includes('UPSTASH') || key.includes('URL') || key.includes('TOKEN')
+    );
     return res.status(500).json({
       success: false,
-      error: '資料庫連線設定未完成。請確認您已在 Vercel 專案後台連結 KV 或 Upstash Redis 資料庫，並已進行 Redeploy 重新部署。'
+      error: '資料庫連線設定未完成。請確認您已在 Vercel 專案後台連結 KV 或 Upstash Redis 資料庫，並已進行 Redeploy 重新部署。',
+      debugEnvKeys: envKeys
     });
   }
 
