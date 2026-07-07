@@ -6,7 +6,9 @@ let tableInitialized = false;
 // DDL check helper to bootstrap the PostgreSQL table if it does not exist
 async function ensureTable(sql) {
   if (tableInitialized) return;
-  await sql(`
+  
+  // Neon requires SQL queries to be called as a tagged template: sql`QUERY`
+  await sql`
     CREATE TABLE IF NOT EXISTS kuji_records (
       id VARCHAR(255) PRIMARY KEY,
       date VARCHAR(255),
@@ -15,7 +17,7 @@ async function ensureTable(sql) {
       value INTEGER,
       prizes JSONB
     );
-  `);
+  `;
   tableInitialized = true;
 }
 
@@ -56,7 +58,8 @@ export default async function handler(req, res) {
 
     // 1. GET Request - Retrieve all records
     if (method === 'GET') {
-      const rows = await sql('SELECT * FROM kuji_records ORDER BY date DESC, id DESC');
+      // Fetch records using template literal
+      const rows = await sql`SELECT * FROM kuji_records ORDER BY date DESC, id DESC`;
       
       const records = rows.map((r) => {
         let prizes = r.prizes;
@@ -101,25 +104,25 @@ export default async function handler(req, res) {
 
         const prizesJson = JSON.stringify(record.prizes || []);
 
-        // Perform an UPSERT (insert or update on primary key conflict)
-        await sql(`
+        const recordId = String(record.id);
+        const recordDate = String(record.date || '');
+        const recordLocation = String(record.location || '');
+        const recordCost = Number(record.cost) || 0;
+        const recordValue = Number(record.value) || 0;
+
+        // Perform an UPSERT using tagged-template variables.
+        // Neon automatically serializes and parameterizes these variables safely.
+        await sql`
           INSERT INTO kuji_records (id, date, location, cost, value, prizes)
-          VALUES ($1, $2, $3, $4, $5, $6)
+          VALUES (${recordId}, ${recordDate}, ${recordLocation}, ${recordCost}, ${recordValue}, ${prizesJson})
           ON CONFLICT (id)
           DO UPDATE SET 
             date = EXCLUDED.date, 
             location = EXCLUDED.location, 
             cost = EXCLUDED.cost, 
             value = EXCLUDED.value, 
-            prizes = EXCLUDED.prizes
-        `, [
-          String(record.id),
-          String(record.date || ''),
-          String(record.location || ''),
-          Number(record.cost) || 0,
-          Number(record.value) || 0,
-          prizesJson
-        ]);
+            prizes = EXCLUDED.prizes;
+        `;
 
         return res.status(200).json({ success: true });
       }
@@ -130,7 +133,8 @@ export default async function handler(req, res) {
           return res.status(400).json({ success: false, error: 'Missing ID for deletion' });
         }
 
-        await sql('DELETE FROM kuji_records WHERE id = $1', [String(id)]);
+        const recordId = String(id);
+        await sql`DELETE FROM kuji_records WHERE id = ${recordId}`;
         return res.status(200).json({ success: true });
       }
 
