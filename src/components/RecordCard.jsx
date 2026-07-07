@@ -69,7 +69,7 @@ export default function RecordCard({ record, onEdit, onDelete }) {
   return (
     <div className="record-card animate-fade">
       <div className="record-card-header">
-        <div>
+        <div className="record-card-title-group">
           <div className="record-card-shop" style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '3px' }}>
             {shop}
           </div>
