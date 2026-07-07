@@ -6,38 +6,9 @@ import RecordForm from './components/RecordForm';
 import StatsView from './components/StatsView';
 import { Plus, List, BarChart2, Search, RefreshCw } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_GOOGLE_SHEETS_URL;
+const API_URL = '/api/records';
 
 export default function App() {
-  // Render configuration guide if Google Sheets URL is missing
-  if (!API_URL) {
-    return (
-      <div style={{
-        padding: '80px 20px 40px 20px',
-        textAlign: 'center',
-        color: 'var(--text-primary)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        backgroundColor: 'var(--bg-primary)',
-        fontFamily: 'var(--font-sans)'
-      }}>
-        <h3 style={{ color: 'var(--color-danger)', marginBottom: '16px', fontSize: '1.3rem' }}>設定未完成 ⚠️</h3>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: '1.8', maxWidth: '340px' }}>
-          偵測到 <code>.env</code> 檔案中未設定 <code>VITE_GOOGLE_SHEETS_URL</code> 變數。<br /><br />
-          請確認您的專案目錄下已建立 <code>.env</code> 檔案並填入您的 Google Apps Script 網址：<br /><br />
-          <span style={{ display: 'block', textAlign: 'left', backgroundColor: '#F1EFE9', padding: '12px', border: '1px solid var(--border-color)', borderRadius: '8px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
-            VITE_GOOGLE_SHEETS_URL=您的 Apps Script 部署網址
-          </span>
-          <br />
-          設定後請重新執行您的部署。
-        </p>
-      </div>
-    );
-  }
-
   // Initialize records state from localStorage for instantaneous 0ms loading (SWR)
   const [records, setRecords] = useState(() => {
     try {
@@ -53,7 +24,7 @@ export default function App() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
 
-  // Fetch records from Google Sheets on mount (background sync)
+  // Fetch records from Vercel KV database on mount (background sync)
   useEffect(() => {
     const loadRecords = async () => {
       setIsLoading(true);
@@ -68,11 +39,11 @@ export default function App() {
           localStorage.setItem('kuji_records', JSON.stringify(data));
         }
       } catch (err) {
-        console.error('Failed fetching from Google Sheets:', err);
+        console.error('Failed fetching from Vercel KV:', err);
         // Only trigger an alert if the user has absolutely no cached data to view
         const cached = localStorage.getItem('kuji_records');
         if (!cached) {
-          alert('讀取 Google 試算表失敗：' + err.message);
+          alert('讀取雲端資料失敗：' + err.message);
         }
       } finally {
         setIsLoading(false);
@@ -87,9 +58,8 @@ export default function App() {
     try {
       const response = await fetch(API_URL, {
         method: 'POST',
-        mode: 'cors',
         headers: {
-          'Content-Type': 'text/plain' // Use text/plain to bypass CORS preflight in Apps Script
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ action: 'save', record: recordData })
       });
@@ -111,7 +81,7 @@ export default function App() {
         throw new Error(result.error || '伺服器寫入失敗');
       }
     } catch (err) {
-      alert('儲存至 Google 試算表失敗：' + err.message);
+      alert('儲存失敗：' + err.message);
     } finally {
       setIsLoading(false);
     }
@@ -122,9 +92,8 @@ export default function App() {
     try {
       const response = await fetch(API_URL, {
         method: 'POST',
-        mode: 'cors',
         headers: {
-          'Content-Type': 'text/plain' // Use text/plain to bypass CORS preflight in Apps Script
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ action: 'delete', id: id })
       });
