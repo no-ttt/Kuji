@@ -1,10 +1,10 @@
 /* global process */
 import { Redis } from '@upstash/redis';
 
-// Initialize Redis client using standard Vercel KV environment variables
+// Initialize Redis client using standard Vercel KV or Upstash Redis environment variables
 const redis = new Redis({
-  url: process.env.KV_REST_API_URL || '',
-  token: process.env.KV_REST_API_TOKEN || '',
+  url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '',
+  token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '',
 });
 
 export default async function handler(req, res) {
