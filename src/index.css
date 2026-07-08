@@ -1,33 +1,43 @@
 @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg-primary: #FAF9F6; /* Soft warm paper white */
-  --bg-secondary: #FFFFFF; /* Pure card white */
+  --bg-primary: #FAF9F6;
+  /* Soft warm paper white */
+  --bg-secondary: #FFFFFF;
+  /* Pure card white */
   --bg-glass: rgba(255, 255, 255, 0.9);
-  
-  --border-color: #EFECE6; /* Light warm gray */
-  --border-focus: #D4836A; /* Warm Persimmon/Coral */
+
+  --border-color: #EFECE6;
+  /* Light warm gray */
+  --border-focus: #D4836A;
+  /* Warm Persimmon/Coral */
   --border-muted: #F3F1EC;
-  
-  --text-primary: #3C3735; /* Dark brown-gray, much softer than pure black */
-  --text-secondary: #D4836A; /* Soft Persimmon Red */
-  --text-muted: #8E8782; /* Muted stone color */
-  
+
+  --text-primary: #3C3735;
+  /* Dark brown-gray, much softer than pure black */
+  --text-secondary: #D4836A;
+  /* Soft Persimmon Red */
+  --text-muted: #8E8782;
+  /* Muted stone color */
+
   --color-accent: #D4836A;
   --color-accent-hover: #C5725A;
-  --color-gold: #C08E3E; /* Sophisticated gold */
+  --color-gold: #C08E3E;
+  /* Sophisticated gold */
   --color-gold-glow: #FDF9F0;
-  
-  --color-success: #559B73; /* Muted Green */
+
+  --color-success: #559B73;
+  /* Muted Green */
   --color-success-bg: #EAF4EE;
-  --color-danger: #D36C65; /* Soft Coral Red */
+  --color-danger: #D36C65;
+  /* Soft Coral Red */
   --color-danger-bg: #FCEDED;
-  
+
   --font-sans: 'M PLUS Rounded 1c', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --shadow-sm: 0 2px 8px rgba(188, 182, 172, 0.1);
   --shadow-md: 0 8px 24px rgba(188, 182, 172, 0.15);
   --shadow-lg: 0 16px 40px rgba(188, 182, 172, 0.2);
-  
+
   --transition-fast: 0.2s ease;
   --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -41,7 +51,8 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: #F3F1EC; /* Warm tatami beige background for desktop padding */
+  background-color: #F3F1EC;
+  /* Warm tatami beige background for desktop padding */
   color: var(--text-primary);
   min-height: 100vh;
   display: flex;
@@ -67,13 +78,16 @@ body {
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--bg-primary);
 }
+
 ::-webkit-scrollbar-thumb {
   background: #E4E0D5;
   border-radius: 10px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #D4CDBC;
 }
@@ -83,6 +97,7 @@ body {
   from {
     transform: translateY(100%);
   }
+
   to {
     transform: translateY(0);
   }
@@ -92,6 +107,7 @@ body {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -136,7 +152,8 @@ body {
   justify-content: center;
   gap: 8px;
   padding: 12px 24px;
-  border-radius: 24px; /* Soft capsule buttons */
+  border-radius: 24px;
+  /* Soft capsule buttons */
   font-family: var(--font-sans);
   font-size: 0.95rem;
   font-weight: 700;
@@ -546,9 +563,9 @@ body {
 
 /* Floating Action Button */
 .fab-btn {
-  position: fixed;
+  position: absolute;
   bottom: 24px;
-  right: max(24px, calc(50% - 216px));
+  right: 24px;
   width: 56px;
   height: 56px;
   border-radius: 28px;
@@ -572,28 +589,27 @@ body {
 /* Form Sheet Modal (Slide Up Bottom Sheet) */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: rgba(60, 55, 53, 0.4);
   backdrop-filter: blur(4px);
   z-index: 20;
   display: flex;
-  align-items: center;
+  align-items: flex-end; /* anchor to bottom */
   justify-content: center;
   animation: fadeIn var(--transition-fast);
   overflow-y: auto;
-  padding: 20px;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 12px 12px 12px;
 }
 
 .modal-sheet {
   width: 100%;
   max-width: 480px;
   background-color: var(--bg-secondary);
-  border-radius: 24px;
-  border: 1px solid var(--border-color);
-  padding: 24px 24px 24px 24px;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  border-top: 1px solid var(--border-color);
+  padding: 20px 20px 34px 20px; /* Extra bottom pad for iOS home bar */
   max-height: 90vh;
   overflow-y: auto;
   animation: slideUp var(--transition-normal);
@@ -601,6 +617,7 @@ body {
   flex-direction: column;
   gap: 20px;
   box-shadow: 0 -8px 30px rgba(60, 55, 53, 0.08);
+  margin: 0 auto;
 }
 
 .modal-header {
@@ -766,7 +783,6 @@ body {
   border-radius: 12px;
   padding: 12px;
   text-align: center;
-  min-width: 0;
 }
 
 .metric-box-val {
@@ -895,3 +911,4 @@ body {
 }
 
 
+}

@@ -17,13 +17,13 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isL
   const [series, setSeries] = useState('');
   const [cost, setCost] = useState('');
   const [drawCount, setDrawCount] = useState(1);
-  const [prizes, setPrizes] = useState([{ tier: '', name: '', value: '' }]);
+  const [prizes, setPrizes] = useState([{ name: '', value: '' }]);
 
   // Sync state with editingRecord
   useEffect(() => {
     if (editingRecord) {
       setDate(editingRecord.date ? editingRecord.date.split('T')[0] : getLocalDateString());
-      
+
       // Split location into shop and series
       const loc = editingRecord.location || '';
       const splitIdx = loc.indexOf('《');
@@ -46,12 +46,11 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isL
           editingRecord.prizes.forEach(p => {
             const count = p.count || 1;
             for (let i = 0; i < count; i++) {
-              loadedPrizes.push({ tier: p.tier || p.name || '', name: p.name || '', value: valPerDraw.toString() });
+              loadedPrizes.push({ name: p.name, value: valPerDraw.toString() });
             }
           });
         } else {
           loadedPrizes = editingRecord.prizes.map(p => ({
-            tier: p.tier || p.name || '',
             name: p.name || '',
             value: p.value !== undefined ? p.value.toString() : ''
           }));
@@ -59,7 +58,7 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isL
       }
 
       if (loadedPrizes.length === 0) {
-        loadedPrizes = [{ tier: '', name: '', value: '' }];
+        loadedPrizes = [{ name: '', value: '' }];
       }
 
       setPrizes(loadedPrizes);
@@ -70,11 +69,32 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isL
       setSeries('');
       setCost('');
       setDrawCount(1);
-      setPrizes([{ tier: '', name: '', value: '' }]);
+      setPrizes([{ name: '', value: '' }]);
     }
   }, [editingRecord, isOpen]);
 
   if (!isOpen) return null;
+
+  // Lock background scroll when modal is open to prevent layout shift
+  useEffect(() => {
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+
+    // prevent background scroll
+    document.body.style.overflow = 'hidden';
+
+    // avoid layout shift when scrollbar disappears by adding equivalent padding
+    const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+    if (scrollBarWidth > 0) {
+      document.body.style.paddingRight = `${scrollBarWidth}px`;
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow || '';
+      document.body.style.paddingRight = originalPaddingRight || '';
+    };
+  }, [isOpen]);
 
   const handleDrawCountChange = (val) => {
     const countText = val.replace(/\D/g, '');
@@ -85,7 +105,7 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isL
     setPrizes((prev) => {
       if (prev.length < activeCount) {
         const diff = activeCount - prev.length;
-        const extra = Array(diff).fill(null).map(() => ({ tier: '', name: '', value: '' }));
+        const extra = Array(diff).fill(null).map(() => ({ name: '', value: '' }));
         return [...prev, ...extra];
       } else {
         return prev.slice(0, activeCount);
@@ -104,16 +124,20 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isL
     });
   };
 
-  // When user selects a tier (e.g. 炮灰), update tier and auto-fill value for 炮灰
-  const handleTierChange = (index, val) => {
+  const handleSelectChange = (index, val) => {
     setPrizes((prev) => {
       const updated = [...prev];
-      const prevPrize = updated[index] || { tier: '', name: '', value: '' };
-      const newValue = val === '炮灰' ? '0' : prevPrize.value;
+      const prevPrize = updated[index] || { name: '', value: '' };
+
+      let newName = val;
+      let newValue = prevPrize.value;
+
+      if (val === '炮灰') {
+        newValue = '0';
+      }
+
       updated[index] = {
-        ...prevPrize,
-        tier: val,
-        // if name is empty and tier is 炮灰, keep name as empty so save will default to 炮灰
+        name: newName,
         value: newValue
       };
       return updated;
@@ -141,12 +165,10 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isL
 
     const finalDrawCount = Math.max(1, drawCount);
     // Sanitize prizes - default empty names to '炮灰' and values to 0
-    const sanitizedPrizes = prizes.slice(0, finalDrawCount).map((p) => {
-      const tier = (p.tier || '').toString().trim();
-      const name = (p.name || '').toString().trim() || (tier || '炮灰');
-      const value = tier === '炮灰' ? 0 : (Number(p.value) || 0);
-      return { tier, name, value };
-    });
+    const sanitizedPrizes = prizes.slice(0, finalDrawCount).map((p) => ({
+      name: p.name.trim() || '炮灰',
+      value: Number(p.value) || 0
+    }));
 
     const totalValue = sanitizedPrizes.reduce((sum, p) => sum + p.value, 0);
 
@@ -260,6 +282,8 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isL
               <div className="draws-container">
                 {Array(Math.max(1, drawCount)).fill(null).map((_, idx) => {
                   const prize = prizes[idx] || { name: '', value: '' };
+                  const isPreset = PRESET_PRIZES.includes(prize.name) || prize.name === '';
+                  const selectValue = prize.name;
 
                   return (
                     <div className="draw-row" key={idx}>
@@ -268,8 +292,8 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isL
                         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '8px' }}>
                           <select
                             className="form-input"
-                            value={prize.tier}
-                            onChange={(e) => handleTierChange(idx, e.target.value)}
+                            value={selectValue}
+                            onChange={(e) => handleSelectChange(idx, e.target.value)}
                             style={{
                               backgroundColor: 'var(--bg-primary)',
                               border: '2px solid var(--border-color)',
@@ -289,19 +313,19 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isL
                             placeholder="價值 NT$"
                             value={prize.value}
                             onChange={(e) => updatePrize(idx, 'value', e.target.value.replace(/[^0-9]/g, ''))}
-                            disabled={prize.tier === '炮灰'}
-                            style={prize.tier === '炮灰' ? { backgroundColor: '#F5F4F0' } : {}}
                           />
                         </div>
 
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="記錄公仔/獎品名稱（例：皮卡丘公仔、限定卡片）"
-                          value={prize.name}
-                          onChange={(e) => updatePrize(idx, 'name', e.target.value)}
-                          style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-                        />
+                        {!isPreset && (
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="請輸入自訂獎項名稱..."
+                            value={prize.name}
+                            onChange={(e) => updatePrize(idx, 'name', e.target.value)}
+                            style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                          />
+                        )}
                       </div>
                     </div>
                   );
