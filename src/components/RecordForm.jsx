@@ -111,7 +111,9 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isL
       let newName = val;
       let newValue = prevPrize.value;
 
-      if (val === '炮灰') {
+      if (val === 'custom') {
+        newName = '自訂獎項';
+      } else if (val === '炮灰') {
         newValue = '0';
       }
 
@@ -262,7 +264,7 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isL
                 {Array(Math.max(1, drawCount)).fill(null).map((_, idx) => {
                   const prize = prizes[idx] || { name: '', value: '' };
                   const isPreset = PRESET_PRIZES.includes(prize.name) || prize.name === '';
-                  const selectValue = prize.name;
+                  const selectValue = isPreset ? prize.name : 'custom';
 
                   return (
                     <div className="draw-row" key={idx}>
@@ -284,6 +286,7 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isL
                             {PRESET_PRIZES.map(p => (
                               <option key={p} value={p}>{p}</option>
                             ))}
+                            <option value="custom">自訂獎項...</option>
                           </select>
 
                           <input
