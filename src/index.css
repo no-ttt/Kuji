@@ -678,7 +678,7 @@ body {
   border-radius: 12px;
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 0.9rem;
+  font-size: 1rem; /* prevent mobile auto-zoom on input */
   outline: none;
   transition: all var(--transition-fast);
 }
@@ -784,6 +784,7 @@ body {
   border-radius: 12px;
   padding: 12px;
   text-align: center;
+  min-height: 88px;
 }
 
 .metric-box-val {
@@ -796,6 +797,24 @@ body {
   font-size: 0.7rem;
   color: var(--text-muted);
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .stat-metric-row {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-box {
+    text-align: left;
+  }
+
+  .metric-box-label {
+    white-space: normal;
+    word-break: break-word;
+  }
 }
 
 /* Custom CSS Chart for Prizes */
