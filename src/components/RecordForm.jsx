@@ -81,23 +81,32 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isL
     }
   }, [editingRecord, isOpen]);
 
-  // Lock background scroll when modal is open to prevent layout shift
+  // Lock viewport scroll while the modal is open so the sheet stays anchored
   useEffect(() => {
     if (!isOpen) return;
+
     const originalOverflow = document.body.style.overflow;
     const originalPaddingRight = document.body.style.paddingRight;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalBodyHeight = document.body.style.height;
 
-    // prevent background scroll
+    document.body.classList.add('modal-open');
+    document.documentElement.classList.add('modal-open');
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.height = '100%';
 
-    // avoid layout shift when scrollbar disappears by adding equivalent padding
     const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
     if (scrollBarWidth > 0) {
       document.body.style.paddingRight = `${scrollBarWidth}px`;
     }
 
     return () => {
+      document.body.classList.remove('modal-open');
+      document.documentElement.classList.remove('modal-open');
       document.body.style.overflow = originalOverflow || '';
+      document.documentElement.style.overflow = originalHtmlOverflow || '';
+      document.body.style.height = originalBodyHeight || '';
       document.body.style.paddingRight = originalPaddingRight || '';
     };
   }, [isOpen]);
@@ -199,9 +208,25 @@ export default function RecordForm({ isOpen, onClose, onSave, editingRecord, isL
     onClose();
   };
 
+  const handleOverlayScroll = (e) => {
+    if (e.target instanceof HTMLElement && !e.target.closest('.modal-sheet')) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   return createPortal(
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-overlay"
+      onClick={onClose}
+      onTouchMove={handleOverlayScroll}
+      onWheel={handleOverlayScroll}
+    >
+      <div
+        className="modal-sheet"
+        onClick={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
           <h3 className="modal-title">{editingRecord ? '修改戰績' : '新增戰績'}</h3>
           <button className="modal-close-btn" onClick={onClose} aria-label="Close modal">
