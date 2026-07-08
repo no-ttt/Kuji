@@ -206,14 +206,16 @@ export default function App() {
           </div>
 
           {/* Floating Action Button for mobile add */}
-          <button
-            className="fab-btn"
-            onClick={openAddForm}
-            title="新增戰績"
-            aria-label="Add record"
-          >
-            <Plus size={28} />
-          </button>
+          {!isFormOpen && (
+            <button
+              className="fab-btn"
+              onClick={openAddForm}
+              title="新增戰績"
+              aria-label="Add record"
+            >
+              <Plus size={28} />
+            </button>
+          )}
         </>
       ) : (
         <StatsView records={records} />

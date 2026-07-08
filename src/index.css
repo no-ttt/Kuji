@@ -611,14 +611,20 @@ body {
   border-top: 1px solid var(--border-color);
   padding: 20px 20px 34px 20px;
   max-height: min(90dvh, 760px);
-  overflow-y: auto;
-  animation: slideUp var(--transition-normal);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 20px;
   box-shadow: 0 -8px 30px rgba(60, 55, 53, 0.08);
   margin: 0;
   align-self: flex-end;
+  animation: slideUp var(--transition-normal);
+}
+
+.modal-sheet form {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 2px;
 }
 
 .modal-header {
