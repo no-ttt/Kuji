@@ -563,9 +563,9 @@ body {
 
 /* Floating Action Button */
 .fab-btn {
-  position: absolute;
+  position: fixed;
   bottom: 24px;
-  right: 24px;
+  right: max(24px, calc(50% - 216px));
   width: 56px;
   height: 56px;
   border-radius: 28px;
@@ -577,7 +577,7 @@ body {
   box-shadow: 0 6px 16px rgba(212, 131, 106, 0.3);
   border: none;
   cursor: pointer;
-  z-index: 5;
+  z-index: 25;
   transition: all var(--transition-fast);
 }
 
@@ -594,30 +594,31 @@ body {
   backdrop-filter: blur(4px);
   z-index: 20;
   display: flex;
-  align-items: flex-end; /* anchor to bottom */
+  align-items: flex-end;
   justify-content: center;
   animation: fadeIn var(--transition-fast);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 0 12px 12px 12px;
+  padding: 0;
 }
 
 .modal-sheet {
-  width: 100%;
+  width: min(100%, 480px);
   max-width: 480px;
   background-color: var(--bg-secondary);
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
   border-top: 1px solid var(--border-color);
-  padding: 20px 20px 34px 20px; /* Extra bottom pad for iOS home bar */
-  max-height: 90vh;
+  padding: 20px 20px 34px 20px;
+  max-height: min(90dvh, 760px);
   overflow-y: auto;
   animation: slideUp var(--transition-normal);
   display: flex;
   flex-direction: column;
   gap: 20px;
   box-shadow: 0 -8px 30px rgba(60, 55, 53, 0.08);
-  margin: 0 auto;
+  margin: 0;
+  align-self: flex-end;
 }
 
 .modal-header {
@@ -908,7 +909,4 @@ body {
 
 .monthly-bar-col:hover .monthly-bar-tooltip {
   display: block;
-}
-
-
 }

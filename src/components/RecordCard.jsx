@@ -105,7 +105,7 @@ export default function RecordCard({ record, onEdit, onDelete }) {
               className={`record-prize-tag ${isHighPrize(prize.tier || prize.name) ? 'A' : 'normal'}`}
               title={prize.name}
             >
-              {prize.tier ? `${prize.tier} · ${prize.name}` : prize.name} {prize.count > 1 ? `x${prize.count}` : ''}
+              {prize.tier ? (prize.name ? `${prize.tier} · ${prize.name}` : prize.tier) : prize.name} {prize.count > 1 ? `x${prize.count}` : ''}
             </span>
           ))}
         </div>
