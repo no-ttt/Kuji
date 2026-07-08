@@ -23,16 +23,19 @@ export default function RecordCard({ record, onEdit, onDelete }) {
 
   const { shop, series } = getLocParts();
 
-  // Group prizes by name for cleaner card display
+  // Group prizes by tier + name for cleaner card display
   const getGroupedPrizes = () => {
     if (!prizes || !Array.isArray(prizes)) return [];
     const groups = {};
     prizes.forEach((p) => {
-      const name = p.name || '炮灰';
+      const tier = (p.tier || '').toString();
+      const name = (p.name || '').toString() || tier || '炮灰';
       const count = p.count || 1;
-      groups[name] = (groups[name] || 0) + count;
+      const key = `${tier}||${name}`;
+      if (!groups[key]) groups[key] = { tier, name, count: 0 };
+      groups[key].count += count;
     });
-    return Object.entries(groups).map(([name, count]) => ({ name, count }));
+    return Object.values(groups);
   };
 
   const groupedPrizes = getGroupedPrizes();
@@ -97,11 +100,12 @@ export default function RecordCard({ record, onEdit, onDelete }) {
       {groupedPrizes.length > 0 ? (
         <div className="record-prizes-container">
           {groupedPrizes.map((prize, idx) => (
-            <span 
-              key={idx} 
-              className={`record-prize-tag ${isHighPrize(prize.name) ? 'A' : 'normal'}`}
+            <span
+              key={idx}
+              className={`record-prize-tag ${isHighPrize(prize.tier || prize.name) ? 'A' : 'normal'}`}
+              title={prize.name}
             >
-              {prize.name} {prize.count > 1 ? `x${prize.count}` : ''}
+              {prize.tier ? `${prize.tier} · ${prize.name}` : prize.name} {prize.count > 1 ? `x${prize.count}` : ''}
             </span>
           ))}
         </div>
